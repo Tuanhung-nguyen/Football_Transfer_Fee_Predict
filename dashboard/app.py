@@ -29,21 +29,24 @@ def get_db_engine():
 
 engine = get_db_engine()
 
-# Xác định thư mục gốc của file app.py
+# Load model ML sử dụng đường dẫn linh hoạt (hỗ trợ cả Docker lẫn máy thật)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+possible_paths = [
+    os.path.join(BASE_DIR, "ml_predictor", "player_value_model.joblib"),       # Đường dẫn trong Docker (/app/ml_predictor/...)
+    os.path.join(BASE_DIR, "..", "ml_predictor", "player_value_model.joblib")  # Đường dẫn chạy trực tiếp trên Host
+]
 
-# Load model ML sử dụng đường dẫn tuyệt đối động
-MODEL_PATH = os.path.join(BASE_DIR, "..", "ml_predictor", "player_value_model.joblib")
+MODEL_PATH = next((p for p in possible_paths if os.path.exists(p)), None)
 model_artifact = None
 
-if os.path.exists(MODEL_PATH):
+if MODEL_PATH:
     try:
         model_artifact = joblib.load(MODEL_PATH)
-        print("Loaded ML model artifact successfully.")
+        print(f"Loaded ML model artifact successfully from {MODEL_PATH}.")
     except Exception as e:
         print(f"Error loading ML model: {e}")
 else:
-    print(f"Warning: Model file not found at {MODEL_PATH}")
+    print(f"Warning: Model file not found in {possible_paths}")
 
 def preprocess_input(df):
     numeric_cols = [
